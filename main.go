@@ -9,10 +9,8 @@ import (
 
 const (
 	DictionaryUrl = "https://raw.githubusercontent.com/dwyl/english-words/master/words.txt"
-	UrlListUrl = "https://s3-us-west-2.amazonaws.com/nx-dana/inter-test/endg-urls"
+	UrlListUrl    = "https://s3-us-west-2.amazonaws.com/nx-dana/inter-test/endg-urls"
 )
-
-
 
 func main() {
 	wc := &WordCounter{}
@@ -42,11 +40,10 @@ type WordCounter struct {
 }
 
 // Count counts how many times each word in dictionaryWords appears in all documents
-// referenced in urlList
+// referenced in urlList. TODO(you): implement!
 func (*WordCounter) Count(urlList, dictionaryWords []string) (map[string]int, error) {
 	return nil, nil
 }
-
 
 // GetLines tries to http GET url and return the response body split by newline ("\n").
 func GetLines(url string) ([]string, error) {
@@ -63,7 +60,7 @@ func GetLines(url string) ([]string, error) {
 
 	var lines []string
 	for _, line := range strings.Split(string(bytes), "\n") {
-		if len(line) >0 {
+		if len(line) > 0 {
 			lines = append(lines, line)
 		}
 	}
