@@ -3,7 +3,7 @@ Website Vocabulary Analyzer Test
 
 Hello! Welcome!
 
-In this test you are required to write a java program that counts the number of occurrences of certain words in a group of websites.
+In this test you are required to write a golang program that counts the number of occurrences of certain words in a group of websites.
 
 
 Input
