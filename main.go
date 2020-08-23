@@ -9,7 +9,7 @@ import (
 
 const (
 	DictionaryUrl = "https://raw.githubusercontent.com/dwyl/english-words/master/words.txt"
-	UrlListUrl    = "https://s3-us-west-2.amazonaws.com/nx-dana/inter-test/endg-urls"
+	UrlListUrl    = "https://nx-public.s3-eu-west-1.amazonaws.com/Interview/endg-urls"
 )
 
 func main() {
