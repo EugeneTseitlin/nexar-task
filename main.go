@@ -8,7 +8,12 @@ import (
 )
 
 const (
+	// Document containing all the words in English
 	DictionaryUrl = "https://raw.githubusercontent.com/dwyl/english-words/master/words.txt"
+	
+	// Document containing all links you need to scrape
+	// Use: https://nx-public.s3-eu-west-1.amazonaws.com/Interview/endg-urls-short
+	// for a quick dev feedback loop
 	UrlListUrl    = "https://nx-public.s3-eu-west-1.amazonaws.com/Interview/endg-urls"
 )
 
