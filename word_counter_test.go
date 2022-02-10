@@ -18,8 +18,8 @@ func TestSanityWordCounter(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wc := &WordCounter{}
-	count, err := wc.Count(urls, words)
+	wc := CreateWordCounter(words)
+	count := wc.Count(urls)
 
 	testCases := []struct {
 		word          string
