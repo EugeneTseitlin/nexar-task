@@ -16,6 +16,11 @@ const (
 	// Use: https://nx-public.s3-eu-west-1.amazonaws.com/Interview/endg-urls-short
 	// for a quick dev feedback loop
 	UrlListUrl = "https://nx-public.s3-eu-west-1.amazonaws.com/Interview/endg-urls"
+
+	TextObtainers = 100
+	LineSplitters = 100
+	WordCounters = 100
+	BufferSize = 100
 )
 
 func main() {
@@ -33,7 +38,7 @@ func main() {
 	}
 	fmt.Printf("got %d urls to count\n", len(urls))
 
-	wordCounts := wc.Count(urls[:1000])
+	wordCounts := wc.Count(urls)
 	// if err != nil {
 	// 	panic(err)
 	// }
@@ -46,7 +51,12 @@ func main() {
 type WordCounter struct {
 	dictionary map[string]int
 	counter    map[string]int
-	wg         sync.WaitGroup
+	locker     sync.Mutex
+
+	urlPushersWG     sync.WaitGroup
+	textObraintersWG sync.WaitGroup
+	lineSplittersWG  sync.WaitGroup
+	wordCountersWG   sync.WaitGroup
 }
 
 func CreateWordCounter(dictionaryWords []string) *WordCounter {
@@ -66,11 +76,11 @@ func CreateWordCounter(dictionaryWords []string) *WordCounter {
 // referenced in urlList. TODO(you): implement!
 func (wc *WordCounter) Count(urlList []string) map[string]int {
 
-	urlPipe := make(chan string)
-	textLinePipe := make(chan string)
-	wordPipe := make(chan string)
+	urlPipe := make(chan string, BufferSize)
+	textLinePipe := make(chan string, BufferSize)
+	wordPipe := make(chan string, BufferSize)
 
-	wc.wg.Add(1)
+	wc.urlPushersWG.Add(1)
 	go func() {
 		var i int
 		for _, url := range urlList {
@@ -78,51 +88,79 @@ func (wc *WordCounter) Count(urlList []string) map[string]int {
 			fmt.Println("Push URL #", i)
 			i++
 		}
-		close(urlPipe)
-		wc.wg.Done()
+		wc.urlPushersWG.Done()
 	}()
 
-	wc.wg.Add(1)
-	go func() {
-		for url := range urlPipe {
-			lines, err := GetLines(url)
-			if err != nil {
-				panic(err)
-			}
+	wc.textObraintersWG.Add(TextObtainers)
+	for i := 0; i < TextObtainers; i++ {
+		go wc.obtainText(urlPipe, textLinePipe)
+	}
 
-			for _, line := range lines {
-				textLinePipe <- line
-			}
-		}
-		close(textLinePipe)
-		wc.wg.Done()
-	}()
+	wc.lineSplittersWG.Add(LineSplitters)
+	for i := 0; i < LineSplitters; i++ {
+		go wc.splitLineToWords(textLinePipe, wordPipe)
+	}
 
-	wc.wg.Add(1)
-	go func() {
-		for line := range textLinePipe {
-			words := strings.Split(line, " ")
-			for _, word := range words {
-				_, isExists := wc.dictionary[word]
+	wc.wordCountersWG.Add(WordCounters)
+	for i := 0; i < WordCounters; i++ {
+		go wc.countWords(wordPipe)
+	}
 
-				if isExists {
-					wordPipe <- word
-				}
-			}
-		}
-		close(wordPipe)
-		wc.wg.Done()
-	}()
+	wc.urlPushersWG.Wait()
+	close(urlPipe)
+	
+	wc.textObraintersWG.Wait()
+	close(textLinePipe)
+	
+	wc.lineSplittersWG.Wait()
+	close(wordPipe)
 
-	go func() {
-		for word := range wordPipe {
-			wc.counter[word]++
-		}
-	}()
-
-	wc.wg.Wait()
+	wc.wordCountersWG.Wait()
 
 	return wc.counter
+}
+
+func (wc *WordCounter) countWords(wordPipe chan string) {
+	counter := make(map[string]int)
+	for word := range wordPipe {
+		counter[word]++
+	}
+
+	wc.locker.Lock()
+	for word, count := range counter {
+		wc.counter[word] += count
+	}
+	wc.locker.Unlock()
+
+	wc.wordCountersWG.Done()
+}
+
+func (wc *WordCounter) splitLineToWords(textLinePipe chan string, wordPipe chan string) {
+	for line := range textLinePipe {
+		words := strings.Split(line, " ")
+		for _, word := range words {
+			_, isExists := wc.dictionary[word]
+
+			if isExists {
+				wordPipe <- word
+			}
+		}
+	}
+	wc.lineSplittersWG.Done()
+}
+
+func (wc *WordCounter) obtainText(urlPipe chan string, textLinePipe chan string) {
+	for url := range urlPipe {
+		lines, err := GetLines(url)
+		if err != nil {
+			panic(err)
+		}
+
+		for _, line := range lines {
+			textLinePipe <- line
+		}
+	}
+	wc.textObraintersWG.Done()
 }
 
 // GetLines tries to http GET url and return the response body split by newline ("\n").
