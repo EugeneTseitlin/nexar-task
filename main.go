@@ -19,8 +19,8 @@ const (
 
 	TextObtainers = 100
 	LineSplitters = 100
-	WordCounters = 100
-	BufferSize = 100
+	WordCounters  = 100
+	BufferSize    = 100
 )
 
 func main() {
@@ -39,9 +39,6 @@ func main() {
 	fmt.Printf("got %d urls to count\n", len(urls))
 
 	wordCounts := wc.Count(urls)
-	// if err != nil {
-	// 	panic(err)
-	// }
 
 	for word, count := range wordCounts {
 		fmt.Printf("%s: %d times\n", word, count)
@@ -53,10 +50,10 @@ type WordCounter struct {
 	counter    map[string]int
 	locker     sync.Mutex
 
-	urlPushersWG     sync.WaitGroup
-	textObraintersWG sync.WaitGroup
-	lineSplittersWG  sync.WaitGroup
-	wordCountersWG   sync.WaitGroup
+	urlPushersWG    sync.WaitGroup
+	textObtainersWG sync.WaitGroup
+	lineSplittersWG sync.WaitGroup
+	wordCountersWG  sync.WaitGroup
 }
 
 func CreateWordCounter(dictionaryWords []string) *WordCounter {
@@ -91,7 +88,7 @@ func (wc *WordCounter) Count(urlList []string) map[string]int {
 		wc.urlPushersWG.Done()
 	}()
 
-	wc.textObraintersWG.Add(TextObtainers)
+	wc.textObtainersWG.Add(TextObtainers)
 	for i := 0; i < TextObtainers; i++ {
 		go wc.obtainText(urlPipe, textLinePipe)
 	}
@@ -108,10 +105,10 @@ func (wc *WordCounter) Count(urlList []string) map[string]int {
 
 	wc.urlPushersWG.Wait()
 	close(urlPipe)
-	
-	wc.textObraintersWG.Wait()
+
+	wc.textObtainersWG.Wait()
 	close(textLinePipe)
-	
+
 	wc.lineSplittersWG.Wait()
 	close(wordPipe)
 
@@ -160,7 +157,7 @@ func (wc *WordCounter) obtainText(urlPipe chan string, textLinePipe chan string)
 			textLinePipe <- line
 		}
 	}
-	wc.textObraintersWG.Done()
+	wc.textObtainersWG.Done()
 }
 
 // GetLines tries to http GET url and return the response body split by newline ("\n").
